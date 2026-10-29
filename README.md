@@ -2,9 +2,9 @@
 
 # 🛡️ AegisNexus
 
-### Advanced Cyber Defense Research — Silicon · Kernel · Cryptographic Frontier
+### Advanced Cyber Defense Research - Silicon · Kernel · Cryptographic Frontier
 
-**Enam platform riset keamanan siber tingkat lanjut, dari backdoor fisik di dalam silikon hingga serangan kuantum pada kriptografi — semuanya interaktif, dapat diklik, dan dibuktikan secara kuantitatif.**
+**Enam platform riset keamanan siber tingkat lanjut, dari backdoor fisik di dalam silikon hingga serangan kuantum pada kriptografi - semuanya interaktif, dapat diklik, dan dibuktikan secara kuantitatif.**
 
 ![Projects](https://img.shields.io/badge/platforms-6-36e0c8?style=for-the-badge)
 ![Stack](https://img.shields.io/badge/stack-self--contained%20·%20zero%20dependency-0c111c?style=for-the-badge)
@@ -22,7 +22,7 @@
 ## Ringkasan
 
 AegisNexus adalah kumpulan enam platform riset yang mendemonstrasikan metodologi deteksi dan pertahanan paling
-mutakhir di lapisan terdalam sistem komputasi — tempat software tidak bisa melihat. Setiap platform adalah
+mutakhir di lapisan terdalam sistem komputasi - tempat software tidak bisa melihat. Setiap platform adalah
 dashboard interaktif dengan **logika nyata** (anomaly detection, correlation power analysis, reduksi kisi,
 model cache-timing), bukan sekadar mockup.
 
@@ -51,7 +51,7 @@ Buka **`index.html`** untuk hub portofolio, atau masuk ke tiap platform langsung
 
 ## Menjalankan
 
-Setiap platform adalah satu halaman HTML mandiri — **tanpa build, tanpa dependency**.
+Setiap platform adalah satu halaman HTML mandiri - **tanpa build, tanpa dependency**.
 
 ```bash
 # buka hub
@@ -76,6 +76,7 @@ atas sistem yang Anda miliki/uji.
 <div align="center">
 
 **Christina Apriani** · Cyber Security Professional
+
 *Red Team · Blue Team · Purple Team · Hardware / Kernel / Cryptographic security*
 
 <sub>AegisNexus · 6 platform riset · self-contained · zero dependency</sub>
