@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhantomShield — EM Side-Channel Defense</title>
+<meta name="author" content="Christina Apriani">
+<meta name="description" content="Dynamic EM-jacket and clock-jitter randomizer that defeats Differential EM Analysis (DEMA) key recovery via sub-nanosecond jitter and pseudo-random EM chaff. Research simulation by Christina Apriani.">
+<style>
+  :root{
+    --bg:#060910;--bg2:#0b111d;--panel:#0e1524;--panel2:#12192b;--line:#1c2740;--line2:#2b3a5a;
+    --text:#e8ecf7;--muted:#8e99bd;--faint:#566188;
+    --ind:#5b8cff;--ind2:#86a9ff;--pink:#ff5ca8;--accent:#5b8cff;--glow:rgba(91,140,255,.18);
+    --ok:#2ee6a0;--crit:#ff4d6d;--warn:#ffb020;--chaff:#ff8a3d;
+    --mono:'JetBrains Mono','SFMono-Regular',ui-monospace,Consolas,monospace;
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;--r:11px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1100px 600px at 80% -12%,var(--glow),transparent 55%),linear-gradient(180deg,#060910,#04060b);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
+  ::selection{background:var(--ind);color:#060910}
+  button{font-family:inherit;cursor:pointer}input,select{font-family:inherit}
+  .wrap{max-width:1500px;margin:0 auto;padding:0 20px 70px}
+  header{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:linear-gradient(180deg,rgba(6,9,16,.95),rgba(6,9,16,.78));border-bottom:1px solid var(--line)}
+  .hbar{max-width:1500px;margin:0 auto;padding:13px 20px;display:flex;align-items:center;gap:15px;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(145deg,var(--ind),#2e5ad6);box-shadow:0 0 22px var(--glow);font-family:var(--mono);font-weight:800;color:#fff;font-size:16px}
+  h1{font-size:16px;letter-spacing:.3px}.sub{font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:.5px}
+  .tag{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .pill{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:30px;border:1px solid var(--line2);color:var(--muted);background:var(--panel)}
+  .pill.live{color:var(--ind2);border-color:#20305a}
+  .pill.live::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ind);margin-right:6px;box-shadow:0 0 8px var(--ind);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .crumb{font-size:11px;color:var(--faint);font-family:var(--mono);margin:16px 0 4px}.crumb a{color:var(--muted);text-decoration:none}
+  .grid{display:grid;gap:18px}.cols-2{grid-template-columns:1.3fr .7fr}@media(max-width:1000px){.cols-2{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--r);padding:18px}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .card h2 .bar{width:3px;height:14px;background:var(--ind);border-radius:2px;box-shadow:0 0 8px var(--glow)}
+  .card h2 .right{margin-left:auto;font-size:11px;color:var(--faint);text-transform:none;letter-spacing:0}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0}@media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--r);padding:15px;position:relative;overflow:hidden}
+  .stat::after{content:"";position:absolute;right:-20px;top:-20px;width:68px;height:68px;border-radius:50%;background:var(--glow);filter:blur(11px)}
+  .stat .k{font-family:var(--mono);font-size:24px;font-weight:700;line-height:1}.stat .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-top:7px}
+  label.f{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin:12px 0 6px;display:flex;justify-content:space-between}
+  label.f b{font-family:var(--mono);color:var(--ind2)}
+  input[type=range]{width:100%;accent-color:var(--ind)}
+  .btn{background:linear-gradient(145deg,var(--ind),#2e5ad6);color:#fff;border:none;padding:10px 16px;border-radius:9px;font-weight:700;font-size:13px;box-shadow:0 2px 14px var(--glow);transition:.15s}
+  .btn:hover{transform:translateY(-1px)}.btn.ghost{background:var(--panel);color:var(--text);border:1px solid var(--line2);box-shadow:none}.btn.ghost:hover{border-color:var(--ind)}
+  .btn.sm{padding:7px 12px;font-size:12px}.btn:disabled{opacity:.5;cursor:not-allowed}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .mono{font-family:var(--mono)}
+  svg.chart{width:100%;height:230px;background:#040609;border:1px solid var(--line2);border-radius:10px}
+  svg.chart text{fill:var(--faint);font-size:9px;font-family:var(--mono)}
+  .toggle{display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg2);border:1px solid var(--line2);border-radius:9px;margin-bottom:10px;cursor:pointer;transition:.15s}
+  .toggle.on{border-color:var(--ind);box-shadow:0 0 0 1px var(--glow)}
+  .toggle .tn{font-weight:700;font-size:13px}.toggle .td{font-size:11px;color:var(--faint);margin-top:2px}
+  .sw2{width:40px;height:22px;border-radius:20px;background:var(--line2);position:relative;transition:.2s;flex:0 0 auto}
+  .sw2::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
+  .toggle.on .sw2{background:var(--ind)}.toggle.on .sw2::after{left:20px}
+  .verdict{font-family:var(--mono);font-weight:800;letter-spacing:1px;font-size:14px;padding:11px 14px;border-radius:9px;text-align:center;margin-top:6px}
+  .verdict.leak{background:rgba(255,77,109,.12);color:var(--crit);border:1px solid #4e1420}
+  .verdict.safe{background:rgba(46,230,160,.12);color:var(--ok);border:1px solid #114d31}
+  .keybytes{display:flex;gap:6px;flex-wrap:wrap;font-family:var(--mono);margin-top:10px}
+  .kb{width:38px;height:34px;display:grid;place-items:center;border-radius:6px;background:var(--bg2);border:1px solid var(--line2);font-size:13px;font-weight:700}
+  .kb.ok{border-color:var(--ok);color:var(--ok)}.kb.bad{border-color:var(--crit);color:var(--crit)}
+  .note{font-size:12px;color:var(--muted);background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--warn);padding:10px 12px;border-radius:7px;line-height:1.55;margin-top:14px}
+  footer{margin-top:40px;padding:22px 0;border-top:1px solid var(--line);color:var(--faint);font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}footer b{color:var(--muted)}.sig{font-family:var(--mono)}
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--panel2);border:1px solid var(--ind);color:var(--text);padding:11px 18px;border-radius:10px;font-size:13px;box-shadow:0 10px 40px rgba(0,0,0,.6);transition:.3s;z-index:200;opacity:0}#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <div class="hbar">
+    <div class="logo">φ</div>
+    <div><h1>PhantomShield</h1><div class="sub">AEGISNEXUS · EM-JACKET + CLOCK-JITTER RANDOMIZER</div></div>
+    <div class="tag"><span class="pill live" id="statePill">DEFENSE STANDBY</span></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="crumb"><a href="../index.html">AegisNexus</a> / RF Side-Channel &amp; Air-Gap Interception / PhantomShield</div>
+
+  <div class="stats">
+    <div class="stat"><div class="k" id="s_traces" style="color:var(--ind2)">0</div><div class="l">Trace DEMA Ditangkap</div></div>
+    <div class="stat"><div class="k" id="s_corr" style="color:var(--pink)">—</div><div class="l">Puncak Korelasi</div></div>
+    <div class="stat"><div class="k" id="s_recover">0/16</div><div class="l">Byte Kunci Pulih (penyerang)</div></div>
+    <div class="stat"><div class="k" id="s_success" style="color:var(--ok)">—</div><div class="l">Attack Success</div></div>
+  </div>
+
+  <div class="grid cols-2">
+    <div class="card">
+      <h2><span class="bar"></span>DEMA Correlation — Key Guess 0..255 <span class="right" id="chartMeta">byte #0</span></h2>
+      <svg class="chart" id="chart" viewBox="0 0 512 230" preserveAspectRatio="none"></svg>
+      <div class="row" style="font-size:12px;color:var(--muted);margin-top:8px">
+        <span><span style="color:var(--pink)">■</span> korelasi penyerang</span>
+        <span><span style="color:var(--ind2)">▲</span> posisi kunci sebenarnya</span>
+        <span style="margin-left:auto">Recovered: <b class="mono" id="recByte" style="color:var(--text)">—</b> · True: <b class="mono" id="trueByte" style="color:var(--ind2)">—</b></span>
+      </div>
+      <div class="note"><b style="color:var(--warn)">Metodologi.</b> Differential EM Analysis (DEMA) mengkorelasikan model kebocoran (Hamming weight output S-box AES) dengan jejak EM yang ditangkap. Tanpa pertahanan, kunci sebenarnya memunculkan puncak korelasi tajam. Dengan clock-jitter + EM chaff aktif, jejak jadi tak selaras & penuh derau → puncak kolaps → DEMA gagal. Simulasi edukatif CPA/DEMA.</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="bar"></span>Countermeasure Control</h2>
+      <div class="toggle on" id="tgJitter"><div><div class="tn">Clock-Jitter Randomizer</div><div class="td">jitter sub-nanodetik acak per instruksi</div></div><div class="sw2"></div></div>
+      <label class="f"><span>Jitter magnitude</span><b id="v_jit">0.7</b></label>
+      <input type="range" id="jit" min="0" max="1" step="0.05" value="0.7">
+      <div class="toggle on" id="tgChaff" style="margin-top:14px"><div><div class="tn">EM-Jacket Chaff Generator</div><div class="td">derau EM semu (chaff) dari FPGA eksternal</div></div><div class="sw2"></div></div>
+      <label class="f"><span>Chaff power</span><b id="v_chaff">0.6</b></label>
+      <input type="range" id="chaff" min="0" max="1" step="0.05" value="0.6">
+      <label class="f" style="margin-top:14px"><span>Trace penyerang (N)</span><b id="v_n">400</b></label>
+      <input type="range" id="ntr" min="50" max="1500" step="50" value="400">
+      <div class="row" style="margin-top:18px">
+        <button class="btn" id="btnAttack">▶ Jalankan Serangan DEMA</button>
+      </div>
+      <div class="verdict safe" id="verdict" style="margin-top:16px">MENUNGGU</div>
+      <div style="font-size:11px;color:var(--faint);margin-top:12px">Kunci AES (rahasia, byte #0):</div>
+      <div class="keybytes" id="keybytes"></div>
+    </div>
+  </div>
+
+  <footer>
+    <div>Dibangun oleh <b class="sig">Christina Apriani</b> · PhantomShield · AegisNexus</div>
+    <div class="sig">Research simulation · DEMA countermeasure · jitter + EM chaff</div>
+  </footer>
+</div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* PhantomShield — EM side-channel (DEMA/CPA) countermeasure research simulation.
+   Author: Christina Apriani. Real correlation-power-analysis model on simulated
+   traces; demonstrates that jitter + EM chaff defeat key recovery. */
+const App=(function(){
+  // AES S-box
+  const SBOX=(()=>{const s=[0x63,0x7c,0x77,0x7b,0xf2,0x6b,0x6f,0xc5,0x30,0x01,0x67,0x2b,0xfe,0xd7,0xab,0x76,0xca,0x82,0xc9,0x7d,0xfa,0x59,0x47,0xf0,0xad,0xd4,0xa2,0xaf,0x9c,0xa4,0x72,0xc0,0xb7,0xfd,0x93,0x26,0x36,0x3f,0xf7,0xcc,0x34,0xa5,0xe5,0xf1,0x71,0xd8,0x31,0x15,0x04,0xc7,0x23,0xc3,0x18,0x96,0x05,0x9a,0x07,0x12,0x80,0xe2,0xeb,0x27,0xb2,0x75,0x09,0x83,0x2c,0x1a,0x1b,0x6e,0x5a,0xa0,0x52,0x3b,0xd6,0xb3,0x29,0xe3,0x2f,0x84,0x53,0xd1,0x00,0xed,0x20,0xfc,0xb1,0x5b,0x6a,0xcb,0xbe,0x39,0x4a,0x4c,0x58,0xcf,0xd0,0xef,0xaa,0xfb,0x43,0x4d,0x33,0x85,0x45,0xf9,0x02,0x7f,0x50,0x3c,0x9f,0xa8,0x51,0xa3,0x40,0x8f,0x92,0x9d,0x38,0xf5,0xbc,0xb6,0xda,0x21,0x10,0xff,0xf3,0xd2,0xcd,0x0c,0x13,0xec,0x5f,0x97,0x44,0x17,0xc4,0xa7,0x7e,0x3d,0x64,0x5d,0x19,0x73,0x60,0x81,0x4f,0xdc,0x22,0x2a,0x90,0x88,0x46,0xee,0xb8,0x14,0xde,0x5e,0x0b,0xdb,0xe0,0x32,0x3a,0x0a,0x49,0x06,0x24,0x5c,0xc2,0xd3,0xac,0x62,0x91,0x95,0xe4,0x79,0xe7,0xc8,0x37,0x6d,0x8d,0xd5,0x4e,0xa9,0x6c,0x56,0xf4,0xea,0x65,0x7a,0xae,0x08,0xba,0x78,0x25,0x2e,0x1c,0xa6,0xb4,0xc6,0xe8,0xdd,0x74,0x1f,0x4b,0xbd,0x8b,0x8a,0x70,0x3e,0xb5,0x66,0x48,0x03,0xf6,0x0e,0x61,0x35,0x57,0xb9,0x86,0xc1,0x1d,0x9e,0xe1,0xf8,0x98,0x11,0x69,0xd9,0x8e,0x94,0x9b,0x1e,0x87,0xe9,0xce,0x55,0x28,0xdf,0x8c,0xa1,0x89,0x0d,0xbf,0xe6,0x42,0x68,0x41,0x99,0x2d,0x0f,0xb0,0x54,0xbb,0x16];return s;})();
+  const HW=new Uint8Array(256); for(let i=0;i<256;i++){let c=0,x=i;while(x){c+=x&1;x>>=1;}HW[i]=c;}
+  const TRUE_KEY=0x2B;
+  let stats={traces:0};
+
+  function gauss(){ let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+
+  function runAttack(){
+    const N=+document.getElementById('ntr').value;
+    const jitterOn=document.getElementById('tgJitter').classList.contains('on');
+    const chaffOn=document.getElementById('tgChaff').classList.contains('on');
+    const jit=jitterOn?+document.getElementById('jit').value:0;
+    const chaff=chaffOn?+document.getElementById('chaff').value:0;
+
+    // generate traces: measured leakage at the attacker's chosen sample point
+    const plain=new Uint8Array(N), meas=new Float64Array(N);
+    const SAMPLES=24, leakPos=12;
+    for(let i=0;i<N;i++){
+      const p=Math.floor(Math.random()*256); plain[i]=p;
+      const trueLeak=HW[SBOX[p^TRUE_KEY]];            // real leakage value
+      // jitter shifts WHERE the leak appears; attacker samples at fixed leakPos
+      const shift=Math.round(jit*(Math.random()*2-1)*6);
+      const observedAtSample = (shift===0)? trueLeak : trueLeak*Math.max(0,1-Math.abs(shift)/3); // misalignment attenuates
+      // base measurement noise + EM chaff (large pseudo-random noise mimicking processing freq)
+      const noise = gauss()*(0.8 + chaff*6.0);
+      meas[i] = observedAtSample + noise;
+    }
+    // CPA: correlate HW model with measurement for each key guess
+    const corr=new Float64Array(256);
+    // precompute meas stats
+    let mm=0; for(let i=0;i<N;i++)mm+=meas[i]; mm/=N;
+    let mvar=0; for(let i=0;i<N;i++){const d=meas[i]-mm;mvar+=d*d;}
+    for(let g=0;g<256;g++){
+      let hm=0; const h=new Float64Array(N);
+      for(let i=0;i<N;i++){ h[i]=HW[SBOX[plain[i]^g]]; hm+=h[i]; } hm/=N;
+      let cov=0,hvar=0;
+      for(let i=0;i<N;i++){ const dh=h[i]-hm,dm=meas[i]-mm; cov+=dh*dm; hvar+=dh*dh; }
+      corr[g]=Math.abs(cov/Math.sqrt(hvar*mvar+1e-9));
+    }
+    // recovered = argmax
+    let best=0,bestv=0,secondv=0; for(let g=0;g<256;g++){ if(corr[g]>bestv){secondv=bestv;bestv=corr[g];best=g;} else if(corr[g]>secondv)secondv=corr[g]; }
+    stats.traces+=N;
+    const success = (best===TRUE_KEY) && (bestv>0.25) && (bestv-secondv>0.05);
+    render(corr,best,bestv,success);
+    return {best,bestv,success};
+  }
+
+  function render(corr,best,bestv,success){
+    const svg=document.getElementById('chart'); const W=512,H=230; let pts=[];
+    let max=0; for(let g=0;g<256;g++)if(corr[g]>max)max=corr[g]; max=Math.max(max,0.3);
+    for(let g=0;g<256;g++){ const x=g/255*W; const y=H-10-(corr[g]/max)*(H-24); pts.push(x+','+y); }
+    let html='';
+    for(let gl=0;gl<H;gl+=46)html+=`<line x1="0" y1="${gl}" x2="${W}" y2="${gl}" stroke="var(--line)" stroke-width="1"/>`;
+    // true key marker
+    const tx=TRUE_KEY/255*W;
+    html+=`<line x1="${tx}" y1="0" x2="${tx}" y2="${H}" stroke="var(--ind2)" stroke-width="1" stroke-dasharray="3 3" opacity=".7"/>`;
+    html+=`<polyline points="${pts.join(' ')}" fill="none" stroke="var(--pink)" stroke-width="1.4"/>`;
+    html+=`<text x="${tx+3}" y="12">true key 0x${TRUE_KEY.toString(16).toUpperCase()}</text>`;
+    svg.innerHTML=html;
+    document.getElementById('s_traces').textContent=stats.traces.toLocaleString('id-ID');
+    document.getElementById('s_corr').textContent=bestv.toFixed(2);
+    document.getElementById('recByte').textContent='0x'+best.toString(16).toUpperCase().padStart(2,'0');
+    document.getElementById('trueByte').textContent='0x'+TRUE_KEY.toString(16).toUpperCase().padStart(2,'0');
+    document.getElementById('s_recover').textContent=(success?1:0)+'/16';
+    document.getElementById('s_success').textContent=success?'BERHASIL':'GAGAL';
+    document.getElementById('s_success').style.color=success?'var(--crit)':'var(--ok)';
+    const v=document.getElementById('verdict');
+    if(success){ v.className='verdict leak'; v.textContent='☠ KUNCI BOCOR · DEMA berhasil (pertahanan lemah/off)'; document.getElementById('statePill').textContent='LEAKAGE DETECTED'; }
+    else{ v.className='verdict safe'; v.textContent='✓ KUNCI AMAN · korelasi kolaps ke derau'; document.getElementById('statePill').textContent='DEFENSE ACTIVE'; }
+    // key bytes display
+    const kb=document.getElementById('keybytes');
+    kb.innerHTML=`<div class="kb ${success?'bad':'ok'}">${('0'+TRUE_KEY.toString(16)).slice(-2).toUpperCase()}</div>`+
+      Array.from({length:7},()=>'<div class="kb">··</div>').join('');
+    toast(success?'DEMA berhasil memulihkan kunci — aktifkan pertahanan!':'DEMA gagal — jitter + chaff melindungi kunci');
+  }
+
+  function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('show'),2600); }
+
+  function init(){
+    document.getElementById('btnAttack').onclick=runAttack;
+    ['tgJitter','tgChaff'].forEach(id=>document.getElementById(id).onclick=()=>document.getElementById(id).classList.toggle('on'));
+    document.getElementById('jit').oninput=function(){document.getElementById('v_jit').textContent=(+this.value).toFixed(2);};
+    document.getElementById('chaff').oninput=function(){document.getElementById('v_chaff').textContent=(+this.value).toFixed(2);};
+    document.getElementById('ntr').oninput=function(){document.getElementById('v_n').textContent=this.value;};
+    // initial empty chart
+    const z=new Float64Array(256); render(z,0,0,false);
+    document.getElementById('verdict').textContent='MENUNGGU'; document.getElementById('verdict').className='verdict safe';
+  }
+  return { init };
+})();
+App.init();
+</script>
+</body>
+</html>

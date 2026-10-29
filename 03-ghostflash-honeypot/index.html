@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GhostFlash — Firmware Honeypot &amp; Air-Gap Defense</title>
+<meta name="author" content="Christina Apriani">
+<meta name="description" content="Low-level firmware honeypot with air-gap covert-channel exfiltration detection (fan, LED, acoustic, thermal) and conceptual active-defense containment. Research simulation by Christina Apriani.">
+<style>
+  :root{
+    --bg:#0a0705;--bg2:#13100b;--panel:#161109;--panel2:#1b150d;--line:#2b2013;--line2:#3d2f1d;
+    --text:#f3ece0;--muted:#b19a7c;--faint:#6f5c42;
+    --amber:#ff9f1c;--amber2:#ffbf5c;--red:#ff5a5f;--cyan:#39d0ff;--accent:#ff9f1c;--glow:rgba(255,159,28,.16);
+    --ok:#46d08a;--ok-dim:#114d31;--crit:#ff2d55;--warn:#ffc53d;
+    --mono:'JetBrains Mono','SFMono-Regular',ui-monospace,Consolas,monospace;
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;--r:11px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1100px 600px at 80% -12%,var(--glow),transparent 55%),linear-gradient(180deg,#0a0705,#070503);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
+  ::selection{background:var(--amber);color:#1a1205}
+  button{font-family:inherit;cursor:pointer}input,select{font-family:inherit}
+  .wrap{max-width:1500px;margin:0 auto;padding:0 20px 70px}
+  header{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:linear-gradient(180deg,rgba(10,7,5,.95),rgba(10,7,5,.78));border-bottom:1px solid var(--line)}
+  .hbar{max-width:1500px;margin:0 auto;padding:13px 20px;display:flex;align-items:center;gap:15px;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(145deg,var(--amber),#c2740a);box-shadow:0 0 22px var(--glow);font-family:var(--mono);font-weight:800;color:#1a1205;font-size:16px}
+  h1{font-size:16px;letter-spacing:.3px}.sub{font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:.5px}
+  .tag{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .pill{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:30px;border:1px solid var(--line2);color:var(--muted);background:var(--panel)}
+  .pill.live{color:var(--amber2);border-color:#4a3410}
+  .pill.live::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber);margin-right:6px;box-shadow:0 0 8px var(--amber);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .crumb{font-size:11px;color:var(--faint);font-family:var(--mono);margin:16px 0 4px}.crumb a{color:var(--muted);text-decoration:none}
+  .grid{display:grid;gap:18px}.cols-2{grid-template-columns:1fr 1fr}.cols-2b{grid-template-columns:.8fr 1.2fr}@media(max-width:1000px){.cols-2,.cols-2b{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--r);padding:18px}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .card h2 .bar{width:3px;height:14px;background:var(--amber);border-radius:2px;box-shadow:0 0 8px var(--glow)}
+  .card h2 .right{margin-left:auto;font-size:11px;color:var(--faint);text-transform:none;letter-spacing:0}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0}@media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--r);padding:15px;position:relative;overflow:hidden}
+  .stat::after{content:"";position:absolute;right:-20px;top:-20px;width:68px;height:68px;border-radius:50%;background:var(--glow);filter:blur(11px)}
+  .stat .k{font-family:var(--mono);font-size:26px;font-weight:700;line-height:1}.stat .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-top:7px}
+  label.f{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin:12px 0 6px}
+  select.x{width:100%;background:var(--bg2);border:1px solid var(--line2);color:var(--text);padding:9px 11px;border-radius:8px;font-size:13px;outline:none}
+  .btn{background:linear-gradient(145deg,var(--amber),#c2740a);color:#1a1205;border:none;padding:10px 16px;border-radius:9px;font-weight:700;font-size:13px;box-shadow:0 2px 14px var(--glow);transition:.15s}
+  .btn:hover{transform:translateY(-1px)}.btn.ghost{background:var(--panel);color:var(--text);border:1px solid var(--line2);box-shadow:none}.btn.ghost:hover{border-color:var(--amber)}
+  .btn.sm{padding:7px 12px;font-size:12px}.btn.danger{background:linear-gradient(145deg,var(--red),#b4293c);color:#fff}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .mono{font-family:var(--mono)}
+  .term{background:#070503;border:1px solid var(--line2);border-radius:9px;padding:12px;font-family:var(--mono);font-size:12px;line-height:1.7;max-height:280px;overflow:auto}
+  .term .ln{white-space:pre-wrap}.term .ok{color:var(--ok)}.term .bad{color:var(--crit)}.term .amb{color:var(--amber2)}.term .dim{color:var(--faint)}.term .cy{color:var(--cyan)}
+  .channels{display:flex;flex-direction:column;gap:10px}
+  .chan{background:var(--bg2);border:1px solid var(--line2);border-radius:9px;padding:11px 13px}
+  .chan .ch-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px}
+  .chan .ch-name{font-weight:700;display:flex;align-items:center;gap:8px}
+  .chan .spec{height:38px;margin-top:8px}
+  .badge{font-family:var(--mono);font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px}
+  .badge.idle{background:var(--bg);color:var(--faint);border:1px solid var(--line2)}
+  .badge.detect{background:rgba(255,45,85,.14);color:var(--crit);border:1px solid #4e1420;animation:flash 1s infinite}
+  @keyframes flash{50%{opacity:.5}}
+  #map{height:340px;border-radius:10px;border:1px solid var(--line2);overflow:hidden;z-index:1}
+  .leaflet-container{background:#070503!important;font-family:var(--sans)}
+  .verdict{font-family:var(--mono);font-weight:800;letter-spacing:1px;font-size:14px;padding:10px 14px;border-radius:9px;text-align:center;margin-top:6px}
+  .verdict.safe{background:rgba(70,208,138,.12);color:var(--ok);border:1px solid var(--ok-dim)}
+  .verdict.breach{background:rgba(255,45,85,.12);color:var(--crit);border:1px solid #4e1420}
+  .empty{text-align:center;color:var(--faint);padding:24px;font-size:13px}
+  footer{margin-top:40px;padding:22px 0;border-top:1px solid var(--line);color:var(--faint);font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}footer b{color:var(--muted)}.sig{font-family:var(--mono)}
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--panel2);border:1px solid var(--amber);color:var(--text);padding:11px 18px;border-radius:10px;font-size:13px;box-shadow:0 10px 40px rgba(0,0,0,.6);transition:.3s;z-index:200;opacity:0}#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+  .note{font-size:12px;color:var(--muted);background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--warn);padding:10px 12px;border-radius:7px;line-height:1.55;margin-top:14px}
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin="anonymous" referrerpolicy="no-referrer">
+</head>
+<body>
+<header>
+  <div class="hbar">
+    <div class="logo">GF</div>
+    <div><h1>GhostFlash</h1><div class="sub">AEGISNEXUS · FIRMWARE HONEYPOT · AIR-GAP EXFIL DEFENSE</div></div>
+    <div class="tag">
+      <span class="pill live" id="statePill">SHADOW FIRMWARE ACTIVE</span>
+      <span class="pill" id="threatPill">THREAT: nominal</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="crumb"><a href="../index.html">AegisNexus</a> / Offensive Cyber Deception &amp; Autonomous Firmware / GhostFlash</div>
+
+  <div class="stats">
+    <div class="stat"><div class="k" id="s_flash" style="color:var(--amber2)">0</div><div class="l">Flash Attempt Terdeteksi</div></div>
+    <div class="stat"><div class="k" id="s_exfil" style="color:var(--crit)">0</div><div class="l">Covert-Channel Exfil</div></div>
+    <div class="stat"><div class="k" id="s_contain" style="color:var(--ok)">0</div><div class="l">Containment Action</div></div>
+    <div class="stat"><div class="k" id="s_decoy" style="color:var(--cyan)">0</div><div class="l">Data Decoy Diserahkan</div></div>
+  </div>
+
+  <div class="grid cols-2b">
+    <div class="card">
+      <h2><span class="bar"></span>Attack Console</h2>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Simulasikan langkah APT terhadap firmware controller NVMe/SSD. Honeypot merespons otomatis.</p>
+      <label class="f">Vektor serangan</label>
+      <select class="x" id="vector">
+        <option value="flash">UEFI/BIOS re-flash (persistence)</option>
+        <option value="nvme">NVMe controller firmware implant</option>
+        <option value="option-rom">Option-ROM injection</option>
+      </select>
+      <label class="f">Metode exfiltrasi air-gap</label>
+      <select class="x" id="exfil">
+        <option value="fan">Fan-vibration (akustik/getaran)</option>
+        <option value="led">LED blink (optik)</option>
+        <option value="thermal">Thermal manipulation</option>
+        <option value="em">EM emanation</option>
+      </select>
+      <div class="row" style="margin-top:16px">
+        <button class="btn danger" id="btnAttack">☠ Jalankan Rantai Serangan</button>
+      </div>
+      <div class="verdict safe" id="verdict" style="margin-top:16px">PERIMETER AMAN</div>
+
+      <h2 style="margin-top:20px"><span class="bar"></span>Autonomous Defense Posture</h2>
+      <div style="font-size:12px;color:var(--muted);line-height:1.8">
+        <div>Shadow firmware: <b style="color:var(--ok)">armed</b></div>
+        <div>Decoy filesystem: <b style="color:var(--ok)">mounted (high-value lure)</b></div>
+        <div>Covert-channel sensors: <b style="color:var(--ok)">4/4 online</b></div>
+        <div>Containment mode: <b style="color:var(--amber2)">isolate &amp; poison (simulated)</b></div>
+      </div>
+      <div class="note"><b style="color:var(--warn)">Ruang lingkup.</b> Respons "poison/counter" di sini bersifat <b>konseptual &amp; tersimulasi</b> (isolasi sirkuit, penyerahan data decoy, ekstraksi signature) — bukan kode serang balik fungsional terhadap pihak ketiga. Fokus platform ini adalah deteksi &amp; deception defensif.</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="bar"></span>Air-Gap Covert-Channel Monitor <span class="right">4 sensor</span></h2>
+      <div class="channels" id="channels"></div>
+    </div>
+  </div>
+
+  <div class="grid cols-2" style="margin-top:18px">
+    <div class="card">
+      <h2><span class="bar"></span>Firmware Honeypot Trace</h2>
+      <div class="term" id="term"><div class="ln dim">[ghostflash] shadow firmware online · decoy env mounted · menunggu…</div></div>
+    </div>
+    <div class="card">
+      <h2><span class="bar"></span>Protected Air-Gapped Facilities <span class="right">sensor coverage</span></h2>
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <footer>
+    <div>Dibangun oleh <b class="sig">Christina Apriani</b> · GhostFlash · AegisNexus</div>
+    <div class="sig">Research simulation · firmware deception &amp; air-gap exfil detection</div>
+  </footer>
+</div>
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+"use strict";
+/* GhostFlash — firmware honeypot + air-gap exfil detection research simulation.
+   Author: Christina Apriani. Active-defense response is conceptual/simulated only. */
+const App=(function(){
+  const CH=[
+    {id:'fan',name:'Fan-vibration',unit:'Hz',band:[1000,1600],color:'#ff9f1c'},
+    {id:'led',name:'LED optical',unit:'Hz',band:[300,900],color:'#39d0ff'},
+    {id:'thermal',name:'Thermal',unit:'mHz',band:[5,40],color:'#ff5a5f'},
+    {id:'em',name:'EM emanation',unit:'kHz',band:[40,120],color:'#a78bfa'},
+  ];
+  let stats={flash:0,exfil:0,contain:0,decoy:0};
+  let anim={};
+
+  function renderChannels(activeId){
+    document.getElementById('channels').innerHTML=CH.map(c=>`
+      <div class="chan" id="chan-${c.id}">
+        <div class="ch-top"><div class="ch-name"><span style="width:9px;height:9px;border-radius:50%;background:${c.color};display:inline-block"></span>${c.name}</div>
+        <span class="badge ${c.id===activeId?'detect':'idle'}" id="badge-${c.id}">${c.id===activeId?'EXFIL DETECTED':'nominal'}</span></div>
+        <svg class="spec" id="spec-${c.id}" viewBox="0 0 300 38" preserveAspectRatio="none"></svg>
+      </div>`).join('');
+    CH.forEach(c=>drawSpec(c, c.id===activeId));
+  }
+  function drawSpec(c, active){
+    const svg=document.getElementById('spec-'+c.id); if(!svg)return; const W=300,H=38; let pts=[];
+    for(let x=0;x<=W;x+=3){
+      let y= 4 + 3*Math.sin(x*0.3)+ 2*Math.random();
+      if(active){ const peak=180; y += 22*Math.exp(-Math.pow((x-peak)/10,2)); } // modulated exfil carrier
+      pts.push(x+','+(H-2-y));
+    }
+    svg.innerHTML=`<polyline points="${pts.join(' ')}" fill="none" stroke="${active?'var(--crit)':c.color}" stroke-width="${active?1.6:1}" opacity="${active?1:.5}"/>`;
+  }
+
+  function log(cls,msg){ const t=document.getElementById('term'); const d=document.createElement('div'); d.className='ln '+(cls||''); d.textContent=msg; t.appendChild(d); t.scrollTop=t.scrollHeight; while(t.children.length>120)t.removeChild(t.firstChild); }
+  function wait(ms){ return new Promise(r=>setTimeout(r,ms)); }
+  function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('show'),2600); }
+
+  async function attack(){
+    document.getElementById('btnAttack').disabled=true;
+    const vector=document.getElementById('vector').value;
+    const exfil=document.getElementById('exfil').value;
+    const chan=CH.find(c=>c.id===exfil);
+    document.getElementById('threatPill').textContent='THREAT: active intrusion';
+    document.getElementById('statePill').textContent='DECEPTION ENGAGED';
+    log('amb','[intrusion] attacker attempts '+vector+' on storage controller…');
+    await wait(700);
+    // step 1: redirect to shadow firmware
+    log('cy','[ghostflash] write redirected → SHADOW firmware image (attacker unaware)');
+    stats.flash++; document.getElementById('s_flash').textContent=stats.flash;
+    await wait(700);
+    log('dim','[decoy] attacker enumerates decoy filesystem · high-value lure presented');
+    stats.decoy++; document.getElementById('s_decoy').textContent=stats.decoy;
+    await wait(700);
+    // step 2: attacker attempts air-gap exfil
+    log('amb','[air-gap] attacker modulates '+chan.name+' channel to exfiltrate "data"…');
+    renderChannels(exfil);
+    document.getElementById('threatPill').textContent='THREAT: exfil attempt';
+    await wait(900);
+    log('bad','[sensor] '+chan.name+' covert channel DETECTED · carrier '+chan.band[0]+'-'+chan.band[1]+' '+chan.unit);
+    stats.exfil++; document.getElementById('s_exfil').textContent=stats.exfil;
+    await wait(700);
+    // step 3: autonomous containment (conceptual)
+    log('cy','[defense] autonomous containment engaged:');
+    log('ok','  ✓ circuit isolasi — jalur komunikasi penyerang ditutup paksa (simulated)');
+    await wait(400);
+    log('ok','  ✓ exfil stream diracuni dengan data decoy (chaff) — payload penyerang jadi sampah');
+    await wait(400);
+    log('ok','  ✓ signature firmware implant diekstrak → threat-intel feed');
+    stats.contain++; document.getElementById('s_contain').textContent=stats.contain;
+    const v=document.getElementById('verdict'); v.className='verdict breach'; v.textContent='☠ INTRUSI DIKARANTINA · exfil dinetralisir';
+    document.getElementById('threatPill').textContent='THREAT: contained';
+    document.getElementById('statePill').textContent='SHADOW FIRMWARE ACTIVE';
+    toast('Covert-channel exfil ('+chan.name+') terdeteksi & dikarantina');
+    // reset channel after a moment
+    setTimeout(()=>{ renderChannels(null); v.className='verdict safe'; v.textContent='PERIMETER AMAN'; document.getElementById('threatPill').textContent='THREAT: nominal'; },4000);
+    document.getElementById('btnAttack').disabled=false;
+  }
+
+  function initMap(){
+    if(typeof L==='undefined'){ document.getElementById('map').innerHTML='<div class="empty">Peta tidak dapat dimuat.</div>'; return; }
+    try{
+      const map=L.map('map',{zoomControl:true}).setView([-2,118],4);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
+      const sites=[['Data Center Jakarta',-6.2,106.8],['SCADA Plant Cilegon',-6.0,106.05],['Research Lab Bandung',-6.9,107.6],['Vault Surabaya',-7.26,112.75],['Grid Control Medan',3.59,98.67]];
+      sites.forEach(s=>{ L.circleMarker([s[1],s[2]],{radius:7,color:'#ff9f1c',fillColor:'#ff9f1c',fillOpacity:.4,weight:2}).addTo(map).bindPopup('<b>'+s[0]+'</b><br>air-gapped · sensor coverage ✓');
+        L.circle([s[1],s[2]],{radius:90000,color:'#ff9f1c',weight:1,fillOpacity:.04}).addTo(map); });
+      setTimeout(()=>map.invalidateSize(),200);
+    }catch(e){ document.getElementById('map').innerHTML='<div class="empty">Peta offline.</div>'; }
+  }
+
+  function init(){ renderChannels(null); document.getElementById('btnAttack').onclick=attack; initMap(); }
+  return { init };
+})();
+App.init();
+</script>
+</body>
+</html>

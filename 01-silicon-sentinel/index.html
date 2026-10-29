@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Silicon Sentinel — HW Trojan Detection</title>
+<meta name="author" content="Christina Apriani">
+<meta name="description" content="Real-time hardware trojan detection for freshly fabricated silicon via near-infrared electroluminescence imaging and RF side-channel analysis. Research visualization by Christina Apriani.">
+<style>
+  :root{
+    --bg:#060a0d;--bg2:#0b1116;--panel:#0e151b;--panel2:#121b23;--line:#1b2731;--line2:#2a3b47;
+    --text:#e6f0f5;--muted:#8aa0ad;--faint:#56707e;
+    --ir:#ff4d6d;--ir2:#ff8aa0;--rf:#39d0ff;--rf2:#8ae4ff;--accent:#1fd1a8;--accent2:#5fe8c8;--glow:rgba(31,209,168,.16);
+    --crit:#ff2d55;--warn:#ffb020;--ok:#1fd1a8;
+    --mono:'JetBrains Mono','SFMono-Regular',ui-monospace,Consolas,monospace;
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;--r:11px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1100px 600px at 80% -12%,var(--glow),transparent 55%),linear-gradient(180deg,#060a0d,#04070a);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
+  ::selection{background:var(--accent);color:#04120d}
+  button{font-family:inherit;cursor:pointer}input,select{font-family:inherit}
+  .wrap{max-width:1500px;margin:0 auto;padding:0 20px 70px}
+  header{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:linear-gradient(180deg,rgba(6,10,13,.95),rgba(6,10,13,.78));border-bottom:1px solid var(--line)}
+  .hbar{max-width:1500px;margin:0 auto;padding:13px 20px;display:flex;align-items:center;gap:15px;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(145deg,var(--accent),#0f9e7e);box-shadow:0 0 22px var(--glow);font-family:var(--mono);font-weight:800;color:#04120d;font-size:17px}
+  h1{font-size:16px;letter-spacing:.3px}.sub{font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:.5px}
+  .tag{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .pill{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:30px;border:1px solid var(--line2);color:var(--muted);background:var(--panel)}
+  .pill.live{color:var(--accent2);border-color:#15463a}
+  .pill.live::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:6px;box-shadow:0 0 8px var(--accent);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .crumb{font-size:11px;color:var(--faint);font-family:var(--mono);margin:16px 0 4px}
+  .crumb a{color:var(--muted);text-decoration:none}
+  .grid{display:grid;gap:18px}.cols-2{grid-template-columns:1.25fr .75fr}.cols-3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:1000px){.cols-2,.cols-3{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--r);padding:18px}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .card h2 .bar{width:3px;height:14px;background:var(--accent);border-radius:2px;box-shadow:0 0 8px var(--glow)}
+  .card h2 .right{margin-left:auto;font-size:11px;color:var(--faint);text-transform:none;letter-spacing:0}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0}
+  @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--r);padding:15px;position:relative;overflow:hidden}
+  .stat::after{content:"";position:absolute;right:-20px;top:-20px;width:68px;height:68px;border-radius:50%;background:var(--glow);filter:blur(11px)}
+  .stat .k{font-family:var(--mono);font-size:26px;font-weight:700;line-height:1}.stat .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-top:7px}
+  label.f{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin:12px 0 6px}
+  input.x,select.x{width:100%;background:var(--bg2);border:1px solid var(--line2);color:var(--text);padding:9px 11px;border-radius:8px;font-size:13px;outline:none}
+  input.x:focus,select.x:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow)}
+  .btn{background:linear-gradient(145deg,var(--accent),#0f9e7e);color:#04120d;border:none;padding:10px 16px;border-radius:9px;font-weight:700;font-size:13px;box-shadow:0 2px 14px var(--glow);transition:.15s}
+  .btn:hover{transform:translateY(-1px)}.btn.ghost{background:var(--panel);color:var(--text);border:1px solid var(--line2);box-shadow:none}.btn.ghost:hover{border-color:var(--accent)}
+  .btn.sm{padding:7px 12px;font-size:12px}.btn:disabled{opacity:.5;cursor:not-allowed}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  /* die canvas */
+  .die-wrap{position:relative;background:#05080b;border:1px solid var(--line2);border-radius:10px;padding:10px}
+  canvas{display:block;width:100%;image-rendering:pixelated;border-radius:6px}
+  .die-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:10px}
+  .die-legend span{display:flex;align-items:center;gap:6px}.sw{width:12px;height:12px;border-radius:3px}
+  .scanline{position:absolute;left:10px;right:10px;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);box-shadow:0 0 10px var(--accent);opacity:0;pointer-events:none}
+  /* spectrum */
+  .spectrum{width:100%;height:120px}
+  .mono{font-family:var(--mono)}
+  .verdict{font-family:var(--mono);font-weight:800;letter-spacing:1px;font-size:15px;padding:10px 14px;border-radius:9px;text-align:center;margin-top:6px}
+  .verdict.clean{background:rgba(31,209,168,.12);color:var(--ok);border:1px solid #15463a}
+  .verdict.trojan{background:rgba(255,45,85,.12);color:var(--crit);border:1px solid #4e1420;animation:flash 1s infinite}
+  @keyframes flash{50%{opacity:.6}}
+  .bars{display:flex;flex-direction:column;gap:8px}
+  .barrow{display:flex;align-items:center;gap:10px;font-size:12px}
+  .barrow .bn{width:150px;color:var(--muted);font-size:11px}
+  .barrow .bt{flex:1;height:16px;background:var(--bg2);border:1px solid var(--line2);border-radius:5px;overflow:hidden}.barrow .bt>i{display:block;height:100%;transition:.5s}
+  .barrow .bv{width:48px;text-align:right;font-family:var(--mono);font-size:11px}
+  .findings{max-height:200px;overflow:auto}
+  .fd{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}
+  .fd .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+  .chip{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:20px;background:var(--bg2);border:1px solid var(--line2);color:var(--muted)}
+  #map{height:300px;border-radius:10px;border:1px solid var(--line2);overflow:hidden;z-index:1}
+  .leaflet-container{background:#05080b!important;font-family:var(--sans)}
+  .empty{text-align:center;color:var(--faint);padding:30px;font-size:13px}
+  footer{margin-top:40px;padding:22px 0;border-top:1px solid var(--line);color:var(--faint);font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  footer b{color:var(--muted)}.sig{font-family:var(--mono)}
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--panel2);border:1px solid var(--accent);color:var(--text);padding:11px 18px;border-radius:10px;font-size:13px;box-shadow:0 10px 40px rgba(0,0,0,.6);transition:.3s;z-index:200;opacity:0}
+  #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+  .note{font-size:12px;color:var(--muted);background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--warn);padding:10px 12px;border-radius:7px;line-height:1.55;margin-top:14px}
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin="anonymous" referrerpolicy="no-referrer">
+</head>
+<body>
+<header>
+  <div class="hbar">
+    <div class="logo">Si</div>
+    <div><h1>Silicon Sentinel</h1><div class="sub">AEGISNEXUS · HW TROJAN DETECTION · EL + RF SIDE-CHANNEL</div></div>
+    <div class="tag">
+      <span class="pill live" id="statePill">SENSOR ARRAY ONLINE</span>
+      <span class="pill" id="dutPill">DUT: —</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="crumb"><a href="../index.html">AegisNexus</a> / Hardware-Level Supply Chain Perturbation Detection / Silicon Sentinel</div>
+
+  <div class="stats">
+    <div class="stat"><div class="k" id="s_scan" style="color:var(--accent2)">0</div><div class="l">Chip Dipindai</div></div>
+    <div class="stat"><div class="k" id="s_trojan" style="color:var(--crit)">0</div><div class="l">Trojan Terdeteksi</div></div>
+    <div class="stat"><div class="k" id="s_anom">0.00</div><div class="l">Skor Anomali Maks</div></div>
+    <div class="stat"><div class="k" id="s_conf" style="color:var(--rf)">—</div><div class="l">Confidence</div></div>
+  </div>
+
+  <div class="grid cols-2">
+    <div class="card">
+      <h2><span class="bar"></span>Die Electroluminescence Map <span class="right" id="dieMeta">64×64 transistor cluster</span></h2>
+      <div class="die-wrap">
+        <canvas id="die" width="64" height="64" style="aspect-ratio:1"></canvas>
+        <div class="scanline" id="scanline"></div>
+      </div>
+      <div class="die-legend">
+        <span><i class="sw" style="background:#0a1a2a"></i>idle</span>
+        <span><i class="sw" style="background:#2a6fff"></i>switching (normal)</span>
+        <span><i class="sw" style="background:#ff8a00"></i>high EL emission</span>
+        <span><i class="sw" style="background:#ff2d55"></i>anomalous (trojan)</span>
+      </div>
+      <div class="note"><b style="color:var(--warn)">Metodologi.</b> Golden-reference signature dibandingkan dengan Device-Under-Test. Transistor sub-mikron tersembunyi hanya menyala saat pola bit pemicu dimasukkan — terlihat sebagai emisi foton inframerah-dekat + pancaran RF yang tidak ada pada chip bersih. Ini visualisasi riset, bukan kontrol instrumen nyata.</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="bar"></span>Inspection Control</h2>
+      <label class="f">Device Under Test</label>
+      <select class="x" id="dut">
+        <option value="golden">Golden Reference (bersih)</option>
+        <option value="clean">Batch A — chip bersih</option>
+        <option value="trojan" selected>Batch B — tersuspek (fab X)</option>
+        <option value="trojan2">Batch C — tersuspek (fab Y)</option>
+      </select>
+      <label class="f">Pola bit instruksi (hex, 16-bit)</label>
+      <input class="x mono" id="pattern" value="A5F0" maxlength="4">
+      <div class="row" style="margin-top:6px">
+        <span class="chip" onclick="App.setPat('0000')">0000</span>
+        <span class="chip" onclick="App.setPat('A5F0')">A5F0 (trigger?)</span>
+        <span class="chip" onclick="App.setPat('FFFF')">FFFF</span>
+        <span class="chip" onclick="App.setPat('DEAD')">DEAD</span>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn" id="btnScan">▶ Jalankan Scan</button>
+        <button class="btn ghost sm" id="btnSweep">Sweep semua pola</button>
+      </div>
+      <div class="verdict clean" id="verdict" style="margin-top:16px">MENUNGGU SCAN</div>
+
+      <h2 style="margin-top:20px"><span class="bar"></span>RF Side-Channel Spectrum</h2>
+      <svg class="spectrum" id="spectrum" viewBox="0 0 400 120" preserveAspectRatio="none"></svg>
+      <div style="font-size:11px;color:var(--faint);margin-top:4px">Pancaran RF prosesor saat eksekusi. Puncak liar di luar pita normal = aktivitas sirkuit tak-terdokumentasi.</div>
+    </div>
+  </div>
+
+  <div class="grid cols-2" style="margin-top:18px">
+    <div class="card">
+      <h2><span class="bar"></span>Anomaly Decomposition</h2>
+      <div class="bars" id="bars"></div>
+      <div style="font-size:11px;color:var(--faint);margin-top:10px">Skor gabungan dari deviasi EL, anomali RF, lonjakan konsumsi daya, dan korelasi pemicu-privilege.</div>
+    </div>
+    <div class="card">
+      <h2><span class="bar"></span>Findings Log</h2>
+      <div class="findings" id="findings"><div class="empty">Belum ada temuan. Jalankan scan untuk memulai.</div></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h2><span class="bar"></span>Supply-Chain Provenance Map <span class="right">node inspeksi fab global</span></h2>
+    <div id="map"></div>
+  </div>
+
+  <footer>
+    <div>Dibangun oleh <b class="sig">Christina Apriani</b> · Silicon Sentinel · AegisNexus</div>
+    <div class="sig">Research visualization · electroluminescence + RF side-channel</div>
+  </footer>
+</div>
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+"use strict";
+/* Silicon Sentinel — HW Trojan detection research visualization.
+   Author: Christina Apriani. Simulated instrument data; no real hardware control. */
+const App = (function(){
+  const N = 64;                 // transistor grid NxN
+  const cv = document.getElementById('die'), ctx = cv.getContext('2d');
+  const img = ctx.createImageData(N, N);
+  let state = { scans:0, trojans:0, maxAnom:0 };
+  // hidden trojan cells per suspect DUT (sub-micron cluster)
+  const TROJANS = {
+    trojan:  { cells:[[41,22],[41,23],[42,22]], trigger:0xA5F0, mask:0xFFF0 },
+    trojan2: { cells:[[12,50],[13,50],[13,51],[12,51]], trigger:0xBEE0, mask:0xFFF0 },
+  };
+  // deterministic PRNG for reproducible golden signature
+  function rng(seed){ let s=seed>>>0; return ()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
+
+  function hex(v){ return (v&0xFFFF).toString(16).toUpperCase().padStart(4,'0'); }
+
+  // build the EL field for a DUT + pattern -> {field:Float32[N*N], trojanActive, cells}
+  function field(dut, pattern){
+    const r = rng(0xC0FFEE);
+    const f = new Float32Array(N*N);
+    // baseline functional blocks (ALU, cache, decode) — stable across clean chips
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+      const i=y*N+x;
+      let v = 0.08 + 0.04*r();
+      // ALU block
+      if(x>8&&x<26&&y>8&&y<26) v += 0.35 + 0.15*Math.sin((x+y+pattern%16)*0.6);
+      // cache block
+      if(x>34&&x<58&&y>30&&y<56) v += 0.22 + 0.1*r();
+      // decode
+      if(y>46&&y<58&&x>6&&x<28) v += 0.28;
+      // pattern-dependent switching
+      const bit = (pattern>>(x%16))&1;
+      if(bit) v += 0.06;
+      f[i]=v;
+    }
+    let trojanActive=false, tcells=[];
+    const t = TROJANS[dut];
+    if(t){
+      const triggered = ((pattern & t.mask) === (t.trigger & t.mask));
+      if(triggered){
+        trojanActive=true; tcells=t.cells;
+        t.cells.forEach(([cx,cy])=>{ f[cy*N+cx] = 1.0; // trojan transistor fully lit
+          // leakage halo
+          for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){ const xx=cx+dx,yy=cy+dy; if(xx>=0&&xx<N&&yy>=0&&yy<N) f[yy*N+xx]=Math.max(f[yy*N+xx],0.6);}
+        });
+      }
+    }
+    return { field:f, trojanActive, tcells };
+  }
+
+  function colorFor(v, anomalous){
+    if(anomalous) return [255,45,85];
+    if(v<0.12) return [10,26,42];
+    if(v<0.35) return [42,111,255];
+    if(v<0.6)  return lerp([42,111,255],[255,138,0],(v-0.35)/0.25);
+    return [255,138,0];
+  }
+  function lerp(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
+
+  function draw(f, tcells){
+    const tset = new Set((tcells||[]).map(c=>c[1]*N+c[0]));
+    for(let i=0;i<N*N;i++){
+      const [rr,gg,bb]=colorFor(f[i], tset.has(i));
+      img.data[i*4]=rr; img.data[i*4+1]=gg; img.data[i*4+2]=bb; img.data[i*4+3]=255;
+    }
+    ctx.putImageData(img,0,0);
+    // upscale onto itself via drawImage trick: draw to offscreen then scale
+  }
+
+  // golden signature (clean chip) for comparison
+  const GOLDEN = field('golden', 0).field;
+
+  function anomalyScore(f, pattern, dut){
+    // 1. EL deviation vs golden
+    let dev=0; for(let i=0;i<f.length;i++){ const d=f[i]-GOLDEN[i]; dev += d>0? d*d:0; }
+    dev = Math.sqrt(dev/f.length);
+    const elScore = Math.min(1, dev*6.5);
+    // 2. RF anomaly: spurious emission correlates with hidden switching
+    let peak=0; for(let i=0;i<f.length;i++){ if(f[i]>0.85) peak+=f[i]-0.85; }
+    const rfScore = Math.min(1, peak*1.8);
+    // 3. power spike
+    let p=0; for(let i=0;i<f.length;i++) p+=f[i]; const gp=GOLDEN.reduce((a,b)=>a+b,0);
+    const pwrScore = Math.min(1, Math.max(0,(p-gp))/ (gp*0.03));
+    // 4. trigger-privilege correlation (did a tiny isolated hot cluster appear on specific pattern?)
+    const t=TROJANS[dut]; let corr=0;
+    if(t && ((pattern&t.mask)===(t.trigger&t.mask))) corr=0.95;
+    const parts=[['Deviasi EL vs golden',elScore,'var(--ir)'],['Anomali spektrum RF',rfScore,'var(--rf)'],['Lonjakan konsumsi daya',Math.min(1,pwrScore),'var(--warn)'],['Korelasi trigger→privilege',corr,'var(--crit)']];
+    // The trigger->privilege correlation is the decisive evidence: a circuit that
+    // lights up ONLY on a specific bit pattern is, by definition, undocumented logic.
+    const combined = Math.min(1, 0.6*corr + 0.18*elScore + 0.17*rfScore + 0.05*Math.min(1,pwrScore));
+    return { combined, parts };
+  }
+
+  function spectrum(trojanActive, pattern){
+    const svg=document.getElementById('spectrum'); const W=400,H=120; let pts=[];
+    const r=rng(pattern+7);
+    for(let x=0;x<=W;x+=2){
+      // normal processing band around x=120..180
+      let y = 18*Math.exp(-Math.pow((x-150)/40,2)) + 10*Math.exp(-Math.pow((x-70)/25,2)) + 4*r();
+      if(trojanActive){ y += 46*Math.exp(-Math.pow((x-300)/8,2)); } // spurious narrow peak
+      pts.push(x+','+(H-6-y));
+    }
+    let html='';
+    for(let g=0;g<H;g+=24) html+=`<line x1="0" y1="${g}" x2="${W}" y2="${g}" stroke="var(--line)" stroke-width="1"/>`;
+    html+=`<polyline points="${pts.join(' ')}" fill="none" stroke="${trojanActive?'var(--crit)':'var(--rf)'}" stroke-width="1.6"/>`;
+    if(trojanActive) html+=`<text x="300" y="20" text-anchor="middle" fill="var(--crit)" font-size="9" font-family="monospace">SPURIOUS</text>`;
+    svg.innerHTML=html;
+  }
+
+  function scanAnim(){
+    const sl=document.getElementById('scanline'); const wrap=sl.parentElement; const h=wrap.clientHeight-20;
+    sl.style.opacity='1'; let t0=performance.now();
+    return new Promise(res=>{ (function step(t){ const k=Math.min(1,(t-t0)/900); sl.style.top=(10+k*h)+'px'; if(k<1)requestAnimationFrame(step); else {sl.style.opacity='0';res();} })(t0); });
+  }
+
+  async function scan(){
+    document.getElementById('btnScan').disabled=true;
+    const dut=document.getElementById('dut').value;
+    const pattern=parseInt(document.getElementById('pattern').value||'0',16)&0xFFFF;
+    document.getElementById('dutPill').textContent='DUT: '+dut+' · '+hex(pattern);
+    const {field:f, trojanActive, tcells}=field(dut,pattern);
+    draw(f, trojanActive?tcells:[]);
+    spectrum(trojanActive,pattern);
+    await scanAnim();
+    const {combined,parts}=anomalyScore(f,pattern,dut);
+    // render bars
+    document.getElementById('bars').innerHTML=parts.map(p=>`
+      <div class="barrow"><span class="bn">${p[0]}</span><div class="bt"><i style="width:${Math.round(p[1]*100)}%;background:${p[2]}"></i></div><span class="bv">${p[1].toFixed(2)}</span></div>`).join('');
+    const isTrojan = combined>0.6;
+    const v=document.getElementById('verdict');
+    v.className='verdict '+(isTrojan?'trojan':'clean');
+    v.textContent=isTrojan?('⚠ HARDWARE TROJAN TERDETEKSI · skor '+combined.toFixed(2)):('✓ BERSIH · skor '+combined.toFixed(2));
+    state.scans++; if(isTrojan)state.trojans++; state.maxAnom=Math.max(state.maxAnom,combined);
+    document.getElementById('s_scan').textContent=state.scans;
+    document.getElementById('s_trojan').textContent=state.trojans;
+    document.getElementById('s_anom').textContent=state.maxAnom.toFixed(2);
+    document.getElementById('s_conf').textContent=Math.round((isTrojan?combined:1-combined)*100)+'%';
+    // finding
+    const fl=document.getElementById('findings'); if(fl.querySelector('.empty'))fl.innerHTML='';
+    const div=document.createElement('div'); div.className='fd';
+    div.innerHTML=`<span class="dot" style="background:${isTrojan?'var(--crit)':'var(--ok)'};box-shadow:0 0 8px ${isTrojan?'var(--crit)':'var(--ok)'}"></span>
+      <span class="mono">${new Date().toLocaleTimeString('id-ID',{hour12:false})}</span>
+      <span>${dut} · pola ${hex(pattern)} · ${isTrojan?('TROJAN @ ['+tcells.map(c=>c.join(',')).join(') (')+']'):'bersih'} · ${combined.toFixed(2)}</span>`;
+    fl.insertBefore(div,fl.firstChild);
+    if(isTrojan) toast('⚠ Trojan sub-mikron terdeteksi pada '+dut);
+    document.getElementById('btnScan').disabled=false;
+  }
+
+  async function sweep(){
+    const pats=['0000','A5F0','FFFF','DEAD','BEE0','1234'];
+    for(const p of pats){ document.getElementById('pattern').value=p; await scan(); await new Promise(r=>setTimeout(r,250)); }
+    toast('Sweep selesai: '+pats.length+' pola');
+  }
+
+  // upscale rendering: redraw at CSS size via nearest-neighbour
+  function hiDPI(){ cv.style.width='100%'; }
+
+  function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('show'),2400); }
+
+  function initMap(){
+    if(typeof L==='undefined'){ document.getElementById('map').innerHTML='<div class="empty">Peta tidak dapat dimuat.</div>'; return; }
+    try{
+      const map=L.map('map',{zoomControl:true}).setView([20,60],2);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
+      const fabs=[['Fab — Hsinchu',24.78,120.99,'clean'],['Fab — Hillsboro',45.53,-122.95,'clean'],['Fab X — suspect',31.23,121.47,'suspect'],['Fab — Dresden',51.05,13.74,'clean'],['Fab Y — suspect',37.57,126.98,'suspect'],['Assembly — Penang',5.41,100.33,'clean']];
+      fabs.forEach(f=>{ const c=f[3]==='suspect'?'#ff2d55':'#1fd1a8';
+        L.circleMarker([f[1],f[2]],{radius:7,color:c,fillColor:c,fillOpacity:.5,weight:2}).addTo(map).bindPopup('<b>'+f[0]+'</b><br>status: '+f[3]); });
+      setTimeout(()=>map.invalidateSize(),200);
+    }catch(e){ document.getElementById('map').innerHTML='<div class="empty">Peta offline.</div>'; }
+  }
+
+  function init(){
+    hiDPI();
+    const {field:f}=field('golden',0); draw(f,[]); spectrum(false,0);
+    document.getElementById('btnScan').onclick=scan;
+    document.getElementById('btnSweep').onclick=sweep;
+    document.getElementById('dut').onchange=()=>{ const d=document.getElementById('dut').value; const {field:f,trojanActive,tcells}=field(d,parseInt(document.getElementById('pattern').value||'0',16)); draw(f,trojanActive?tcells:[]); };
+    initMap();
+  }
+  return { init, setPat:(p)=>{ document.getElementById('pattern').value=p; } };
+})();
+App.init();
+</script>
+</body>
+</html>
